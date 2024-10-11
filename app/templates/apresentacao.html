@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Apresentação de Fotos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='apresentacao.css') }}">
+</head>
+
+<body>
+    <div class="carousel" id="carouselExampleSlidesOnly">
+        <div class="carousel-inner" id="carouselInner">
+        </div>
+    </div>
+
+    <script>
+        // Classe Obra
+        class Obra {
+            constructor(nome, tipoDeObra, dataInicio, dataTermino, dataPrevistaTermino, concluida) {
+                this.nome = nome;
+                this.tipoDeObra = tipoDeObra;
+                this.dataInicio = dataInicio ? new Date(dataInicio) : null;
+                this.dataTermino = dataTermino ? new Date(dataTermino) : null;
+                this.dataPrevistaTermino = dataPrevistaTermino ? new Date(dataPrevistaTermino) : null;
+                this.concluida = concluida;
+            }
+
+            // Formatar datas no padrão 'dd/mm/yyyy'
+            formatDate(date) {
+                if (!date || isNaN(date.getTime())) return '-';
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // Meses começam do zero
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+
+            // Obter status da obra com base nas datas
+            getStatus(today) {
+                if (this.concluida) {
+                    return 'Concluída';
+                } else if (this.dataPrevistaTermino) {
+                    return this.dataPrevistaTermino < today ? 'Obra em atraso' : 'Obra em andamento';
+                } else {
+                    return 'Data prevista não disponível';
+                }
+            }
+        }
+
+        // Classe Foto
+        class Foto {
+            constructor(obra, imgSrc) {
+                this.obra = obra;
+                this.imgSrc = imgSrc;
+            }
+        }
+
+        // Classe Carousel
+        class Carousel {
+            constructor(fotos, carouselInner) {
+                this.fotos = fotos;
+                this.carouselInner = carouselInner;
+                this.currentIndex = 0;
+                this.interval = 7000;
+            }
+
+            // Cria item do carrossel com imagem
+            createCarouselItem(src, alt, isActive) {
+                const item = document.createElement('div');
+                item.className = `carousel-item ${isActive ? 'active' : ''}`;
+
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = alt;
+
+                item.appendChild(img);
+                return item;
+            }
+
+            // Cria a tabela com informações da obra
+            createTable(foto, today) {
+                const obra = foto.obra;
+
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-container';
+
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+
+                thead.innerHTML = `
+            <tr>
+                <th scope="col">Obra</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Início</th>
+                <th scope="col">Término</th>
+                <th scope="col">Término Previsto</th>
+                <th scope="col">Concluída</th>
+                <th scope="col">Status</th>
+            </tr>
+        `;
+
+                const dataTermino = obra.formatDate(obra.dataTermino);
+                const dataPrevistaTermino = obra.formatDate(obra.dataPrevistaTermino);
+                const statusText = obra.getStatus(today);
+
+                tbody.innerHTML = `
+            <tr>
+                <td>${obra.nome}</td>
+                <td>${obra.tipoDeObra}</td>
+                <td>${obra.formatDate(obra.dataInicio)}</td>
+                <td>${dataTermino}</td>
+                <td>${dataPrevistaTermino}</td>
+                <td>${obra.concluida ? 'Sim' : 'Não'}</td>
+                <td>${statusText}</td>
+            </tr>
+        `;
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                tableContainer.appendChild(table);
+
+                return tableContainer;
+            }
+
+            // Preenche o carrossel com as fotos e tabelas
+            populateCarousel() {
+                const today = new Date();
+
+                if (this.fotos.length === 0) {
+                    this.displayErrorImage();
+                } else {
+                    this.fotos.forEach((foto, index) => {
+                        const item = this.createCarouselItem(foto.imgSrc, `Foto ${index + 1}`, index === 0);
+                        const tableContainer = this.createTable(foto, today);
+                        item.appendChild(tableContainer);
+                        this.carouselInner.appendChild(item);
+                    });
+                }
+            }
+
+            // Exibe imagem de erro caso não tenha fotos
+            displayErrorImage() {
+                const item = this.createCarouselItem('URL_PARA_IMAGEM_DE_ERRO', 'Nenhuma foto disponível', true);
+                this.carouselInner.appendChild(item);
+            }
+
+            // Controle de navegação do carrossel
+            showNextSlide() {
+                const items = document.querySelectorAll('.carousel-item');
+                items[this.currentIndex].classList.remove('active');
+                this.currentIndex = (this.currentIndex + 1) % this.fotos.length;
+                items[this.currentIndex].classList.add('active');
+            }
+
+            // Inicia o carrossel
+            startCarousel() {
+                setInterval(() => this.showNextSlide(), this.interval);
+            }
+        }
+
+        // Exemplo de uso
+        const fotos = [
+            {% for foto in fotos %}
+                new Foto(
+                    new Obra(
+                        "{{ foto.obra.nome }}",
+                        "{{ 'Administração' if foto.obra.tipo_de_obra == 1 else 'Empreita' }}",
+                        "{{ foto.obra.data_inicio }}",
+                        "{{ foto.obra.data_termino if foto.obra.data_termino else 'null' }}",
+                        "{{ foto.obra.data_prevista_termino if foto.obra.data_prevista_termino else 'null' }}",
+                        {{ 'true' if loop.index % 2 == 0 else 'false' }}
+                    ),
+                    "{{ url_for('main.serve_foto', foto_id=foto.id) }}"
+                ),
+            {% endfor %}
+        ];
+
+        const carouselInner = document.getElementById('carouselInner');
+        const carousel = new Carousel(fotos, carouselInner);
+        carousel.populateCarousel();
+        carousel.startCarousel();
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ obra.nome }}</title>
+</head>
+<body>
+    <h1>{{ obra.nome }}</h1>
+    <p>Data de Início: {{ obra.data_inicio }}</p>
+    <p>Data Prevista de Término: {{ obra.data_prevista_termino }}</p>
+    <p>Concluída: {{ obra.concluida }}</p>
+    <p>Obra por: {{ 'Administração' if obra.tipo == 0 else 'Empreita' }}</p>
+
+    <h2>Fotos da Obra</h2>
+    <ul>
+        {% for foto in fotos %}
+            <li>
+                Tipo: {{ 'Landscape' if foto.tipo == 0 else 'Portrait' if foto.tipo == 1 else 'Square' }}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <form action="{{ url_for('main.create_foto') }}" method="POST" enctype="multipart/form-data">
+        <input type="file" name="foto" required>
+        <select name="tipo">
+            <option value="0">Landscape</option>
+            <option value="1">Portrait</option>
+            <option value="2">Square</option>
+        </select>
+        <input type="hidden" name="obra_id" value="{{ obra.id }}">
+        <button type="submit">Adicionar Foto</button>
+    </form>
+</body>
+</html>

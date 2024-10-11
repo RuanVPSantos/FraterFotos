@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD de Obras e Fotos</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.home') }}">Frater Obras</a>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <!-- Botão para abrir o modal de criação -->
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createObraModal">
+            Criar Obra
+        </button>
+
+        <!-- Modal de criação de obras -->
+        <div class="modal fade" id="createObraModal" tabindex="-1" aria-labelledby="createObraModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="createObraModalLabel">Criar Nova Obra</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ url_for('main.create_obra') }}" method="POST">
+                            <div class="mb-3">
+                                <label for="nome" class="form-label">Nome da Obra</label>
+                                <input type="text" class="form-control" id="nome" name="nome" placeholder="Digite o nome da obra" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tipo_de_obra" class="form-label">Tipo de Obra</label>
+                                <select class="form-select" id="tipo_de_obra" name="tipo_de_obra" required>
+                                    <option value="0">Empreita</option>
+                                    <option value="1">Administração</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data_inicio" class="form-label">Data de Início</label>
+                                <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data_prevista_termino" class="form-label">Data Prevista de Término</label>
+                                <input type="date" class="form-control" id="data_prevista_termino" name="data_prevista_termino">
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="concluida" name="concluida">
+                                <label class="form-check-label" for="concluida">Concluída</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Salvar Obra</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards responsivos para listar obras -->
+        <div class="row">
+            {% for obra in obras %}
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ obra.nome }}</h5>
+                            <p class="card-text">Obra Por: 
+                                {% if obra.tipo_de_obra == 1 %}
+                                    Administração
+                                {% elif obra.tipo_de_obra == 0 %}
+                                    Empreita
+                                {% endif %}
+                            </p>
+                            <p class="card-text">Data de Início: {{ obra.data_inicio }}</p>
+                            <p class="card-text">Data Prevista de Término: {{ obra.data_prevista_termino or 'Não informada' }}</p>
+                            <p class="card-text">Data de Término: {{ obra.data_termino or 'Não informada' if obra.concluida else 'Não concluída' }}</p>
+                            <p class="card-text">Concluída: {{ 'Sim' if obra.concluida else 'Não' }}</p>
+                            <button type="button" class="btn btn-dark mt-2" data-bs-toggle="modal" data-bs-target="#editObraModal{{ obra.id }}">
+                                Editar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de edição de obras -->
+                <div class="modal fade" id="editObraModal{{ obra.id }}" tabindex="-1" aria-labelledby="editObraModalLabel{{ obra.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title" id="editObraModalLabel{{ obra.id }}">Editar Obra: {{ obra.nome }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{ url_for('main.update_obra', obra_id=obra.id) }}" method="POST" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="nome_{{ obra.id }}" class="form-label">Nome da Obra</label>
+                                        <input type="text" class="form-control" id="nome_{{ obra.id }}" name="nome" value="{{ obra.nome }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="tipo_de_obra_{{ obra.id }}" class="form-label">Tipo de Obra</label>
+                                        <select class="form-select" id="tipo_de_obra_{{ obra.id }}" name="tipo_de_obra" required>
+                                            <option value="0" {% if obra.tipo_de_obra == 0 %}selected{% endif %}>Empreita</option>
+                                            <option value="1" {% if obra.tipo_de_obra == 1 %}selected{% endif %}>Administração</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="data_inicio_{{ obra.id }}" class="form-label">Data de Início</label>
+                                        <input type="date" class="form-control" id="data_inicio_{{ obra.id }}" name="data_inicio" value="{{ obra.data_inicio }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="data_prevista_termino_{{ obra.id }}" class="form-label">Data Prevista de Término</label>
+                                        <input type="date" class="form-control" id="data_prevista_termino_{{ obra.id }}" name="data_prevista_termino" value="{{ obra.data_prevista_termino }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="data_termino_{{ obra.id }}" class="form-label">Data de Término</label>
+                                        <input type="date" class="form-control" id="data_termino_{{ obra.id }}" name="data_termino" value="{{ obra.data_termino }}">
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="concluida_{{ obra.id }}" name="concluida" {% if obra.concluida %}checked{% endif %}>
+                                        <label class="form-check-label" for="concluida_{{ obra.id }}">Concluída</label>
+                                    </div>
+                            
+                                    <!-- Fotos atreladas à obra -->
+                                    <h6>Fotos da Obra</h6>
+                                    <div class="mb-3">
+                                        <ul class="list-group">
+                                            {% for foto in obra.fotos %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <img src="{{ url_for('main.serve_foto', foto_id=foto.id) }}" alt="Foto da obra" class="img-thumbnail" style="max-width: 100px;">
+                                                <div>
+                                                    <input type="file" class="form-control mb-2" name="foto_{{ foto.id }}" accept="image/*">
+                                                    <button type="submit" formaction="{{ url_for('main.delete_foto', foto_id=foto.id) }}" class="btn btn-danger btn-sm">Excluir</button>
+                                                </div>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                            
+                                    <div class="mb-3">
+                                        <input type="file" class="form-control" id="nova_foto" name="nova_foto" accept="image/*" multiple>
+                                    </div>
+                                    <button type="submit" class="btn btn-secondary w-100">Salvar Alterações</button>
+                                </form>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
